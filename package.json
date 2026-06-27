@@ -1,0 +1,23 @@
+{
+  "name": "codex-slack-reviewer",
+  "version": "0.1.0",
+  "description": "Self-hosted Slack Socket Mode bot that asks Codex whether a mention is a review request, then runs a Codex review against origin/main.",
+  "type": "module",
+  "license": "MIT",
+  "private": false,
+  "scripts": {
+    "start": "bun run src/index.ts",
+    "classify": "bun run src/cli.ts classify",
+    "check-types": "tsc --noEmit",
+    "test": "bun test",
+    "verify": "bun run check-types && bun test"
+  },
+  "dependencies": {
+    "@slack/bolt": "^4.6.0",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.3.4",
+    "typescript": "^5.9.3"
+  }
+}
