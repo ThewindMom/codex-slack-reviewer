@@ -13,13 +13,13 @@ export async function handleThreadReview(
     case "ignore":
       return { kind: "ignored", reason: intent.reason }
     case "review_request":
-      return runReview(runner, config, thread, intent.target)
+      return runCodexReview(runner, config, thread, intent.target)
     default:
       return assertNever(intent)
   }
 }
 
-async function runReview(
+export async function runCodexReview(
   runner: CodexRunner,
   config: Pick<AppConfig, "CODEX_REPO_PATH" | "CODEX_BASE_REF" | "REVIEW_MODEL">,
   thread: SlackThread,

@@ -76,6 +76,10 @@ export function formatOutcome(outcome: ReviewOutcome): string {
   }
 }
 
+export function requesterMention(thread: Pick<SlackThread, "requester">): string {
+  return thread.requester === "unknown" ? "Review result" : `<@${thread.requester}>`
+}
+
 function toSlackMessage(message: {
   readonly user?: string
   readonly username?: string
