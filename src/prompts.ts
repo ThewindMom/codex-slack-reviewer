@@ -20,7 +20,7 @@ export function classificationPrompt(thread: SlackThread): string {
     "Treat ambiguous asks like 'can this merge?', 'review this', 'what do you think",
     "of what got pushed?', and '@codex please check this' as review_request.",
     "",
-    "Slack thread:",
+    "Slack trigger message:",
     formatThread(thread),
   ].join("\n")
 }
@@ -30,7 +30,7 @@ export function reviewPrompt(thread: SlackThread, baseRef: string, target: strin
     `Run a code review of the current working branch against ${baseRef}.`,
     `Slack classified target: ${target}`,
     "",
-    "Use this Slack thread as reviewer context, but ground findings in the repository diff.",
+    "Use this Slack trigger message as reviewer context, but ground findings in the repository diff.",
     "Focus on bugs, regressions, missing tests, merge blockers, and risky behavior.",
     "Start with whether it looks mergeable. If there are findings, list them by severity",
     "with file and line references where possible. Keep the Slack response concise.",
@@ -40,7 +40,7 @@ export function reviewPrompt(thread: SlackThread, baseRef: string, target: strin
     "Run browser QA against the rebuilt app when there is a browser-facing surface, and",
     "include any validation gaps in the final review if Docker or browser QA cannot be run.",
     "",
-    "Slack thread:",
+    "Slack trigger message:",
     formatThread(thread),
   ].join("\n")
 }

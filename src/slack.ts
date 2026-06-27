@@ -1,5 +1,5 @@
 import type { AppConfig } from "./config"
-import type { ReviewOutcome, SlackMessage, SlackThread } from "./types"
+import type { ReviewOutcome, SlackThread } from "./types"
 
 type SlackClient = {
   conversations: {
@@ -41,25 +41,16 @@ export function canHandleEvent(
 }
 
 export async function readSlackThread(
-  client: SlackClient,
-  config: Pick<AppConfig, "MAX_THREAD_MESSAGES">,
+  _client: SlackClient,
+  _config: Pick<AppConfig, "MAX_THREAD_MESSAGES">,
   event: SlackMentionEvent,
 ): Promise<SlackThread> {
   const threadTs = event.thread_ts ?? event.ts
-  const response = await client.conversations.replies({
-    channel: event.channel,
-    ts: threadTs,
-    limit: config.MAX_THREAD_MESSAGES,
-  })
-  const messages = (response.messages ?? []).flatMap(toSlackMessage)
   return {
     channel: event.channel,
     threadTs,
     requester: event.user ?? "unknown",
-    messages:
-      messages.length > 0
-        ? messages
-        : [{ user: event.user ?? "unknown", text: event.text ?? "", ts: event.ts }],
+    messages: [{ user: event.user ?? "unknown", text: event.text ?? "", ts: event.ts }],
   }
 }
 
@@ -78,23 +69,6 @@ export function formatOutcome(outcome: ReviewOutcome): string {
 
 export function requesterMention(thread: Pick<SlackThread, "requester">): string {
   return thread.requester === "unknown" ? "Review result" : `<@${thread.requester}>`
-}
-
-function toSlackMessage(message: {
-  readonly user?: string
-  readonly username?: string
-  readonly bot_id?: string
-  readonly text?: string
-  readonly ts?: string
-}): readonly SlackMessage[] {
-  if (!message.ts) return []
-  return [
-    {
-      user: message.user ?? message.username ?? message.bot_id ?? "unknown",
-      text: message.text ?? "",
-      ts: message.ts,
-    },
-  ]
 }
 
 function assertNever(value: never): never {
