@@ -27,9 +27,12 @@ export function classificationPrompt(thread: SlackThread): string {
 
 export function reviewPrompt(thread: SlackThread, baseRef: string, target: string): string {
   return [
-    `Run a code review of the current working branch against ${baseRef}.`,
+    `Run a code review of the requested branch against ${baseRef}.`,
     `Slack classified target: ${target}`,
     "",
+    "Switch to the requested branch before reviewing. Use the Slack classified target",
+    "and trigger message to determine the branch. Fetch the branch from origin if it",
+    "is not available locally. Do not assume the currently checked-out branch is the branch to review.",
     "Use this Slack trigger message as reviewer context, but ground findings in the repository diff.",
     "Focus on bugs, regressions, missing tests, merge blockers, and risky behavior.",
     "Start with whether it looks mergeable. If there are findings, list them by severity",

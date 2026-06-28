@@ -17,4 +17,13 @@ describe("reviewPrompt", () => {
     expect(prompt).toContain("docker compose down -v && docker compose up --build -d")
     expect(prompt).toContain("browser QA")
   })
+
+  test("requires switching to the branch requested in Slack before review", () => {
+    const prompt = reviewPrompt(thread, "origin/main", "fix/dxf-measurement-dirty-flag")
+
+    expect(prompt).toContain("Switch to the requested branch before reviewing")
+    expect(prompt).toContain("fix/dxf-measurement-dirty-flag")
+    expect(prompt).toContain("Do not assume the currently checked-out branch is the branch to review")
+    expect(prompt).toContain("against origin/main")
+  })
 })
