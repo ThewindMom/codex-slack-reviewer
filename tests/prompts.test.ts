@@ -26,4 +26,12 @@ describe("reviewPrompt", () => {
     expect(prompt).toContain("Do not assume the currently checked-out branch is the branch to review")
     expect(prompt).toContain("against origin/main")
   })
+
+  test("handles branches already checked out in another worktree", () => {
+    const prompt = reviewPrompt(thread, "origin/main", "fix/dxf-measurement-dirty-flag")
+
+    expect(prompt).toContain("If Git refuses to switch because the branch is checked out in another worktree")
+    expect(prompt).toContain("origin/fix/dxf-measurement-dirty-flag")
+    expect(prompt).toContain("temporary worktree")
+  })
 })

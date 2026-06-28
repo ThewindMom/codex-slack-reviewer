@@ -33,6 +33,8 @@ export function reviewPrompt(thread: SlackThread, baseRef: string, target: strin
     "Switch to the requested branch before reviewing. Use the Slack classified target",
     "and trigger message to determine the branch. Fetch the branch from origin if it",
     "is not available locally. Do not assume the currently checked-out branch is the branch to review.",
+    `If Git refuses to switch because the branch is checked out in another worktree, review origin/${target}`,
+    "in a detached checkout or create a temporary worktree for the requested branch.",
     "Use this Slack trigger message as reviewer context, but ground findings in the repository diff.",
     "Focus on bugs, regressions, missing tests, merge blockers, and risky behavior.",
     "Start with whether it looks mergeable. If there are findings, list them by severity",
