@@ -4,9 +4,12 @@ import {
   readSlackThread,
   formatMarkdownForSlack,
   formatOutcome,
+  postProgressMessage,
   requesterMention,
   reviewStatusMessages,
   setAssistantStatus,
+  updateProgressMessage,
+  visibleReviewProgressFrames,
 } from "../src/slack"
 
 describe("requesterMention", () => {
@@ -79,14 +82,28 @@ describe("assistant status", () => {
           thread_ts: "1.0",
           status: "Codex is reviewing",
           loading_messages: [
-            "Switching to fix/example",
-            "Reviewing changes against origin/main",
+            "Switching branches",
+            "Reviewing against origin/main",
             "Validating findings",
-            "Preparing the Slack summary",
+            "Preparing summary",
           ],
         },
       },
     ])
+  })
+
+  test("keeps assistant loading messages within Slack's length limit", () => {
+    expect(reviewStatusMessages("fix/very-long-branch-name-that-would-break-slack", "origin/main")).toEqual([
+      "Switching branches",
+      "Reviewing against origin/main",
+      "Validating findings",
+      "Preparing summary",
+    ])
+    expect(
+      reviewStatusMessages("fix/very-long-branch-name-that-would-break-slack", "origin/main").every(
+        (message) => message.length < 51,
+      ),
+    ).toBe(true)
   })
 
   test("clears assistant status", async () => {
@@ -123,6 +140,45 @@ describe("assistant status", () => {
         "Reviewing",
       ]),
     ).resolves.toBeUndefined()
+  })
+})
+
+describe("visible progress messages", () => {
+  test("posts and updates a visible Slack progress message", async () => {
+    const calls: { readonly method: string; readonly args: Record<string, unknown> }[] = []
+    const client = {
+      async apiCall(method: string, args: Record<string, unknown>) {
+        calls.push({ method, args })
+        return { channel: "C123", ts: "2.0" }
+      },
+    }
+
+    const message = await postProgressMessage(
+      client,
+      { channel: "C123", threadTs: "1.0" },
+      "Codex is checking...",
+    )
+    await updateProgressMessage(client, message, "Codex is still reviewing...")
+
+    expect(calls).toEqual([
+      {
+        method: "chat.postMessage",
+        args: { channel: "C123", thread_ts: "1.0", text: "Codex is checking..." },
+      },
+      {
+        method: "chat.update",
+        args: { channel: "C123", ts: "2.0", text: "Codex is still reviewing..." },
+      },
+    ])
+  })
+
+  test("builds visible review progress frames with the branch and base", () => {
+    expect(visibleReviewProgressFrames("fix/example", "origin/main")).toEqual([
+      "Codex is switching to `fix/example`...",
+      "Codex is reviewing against `origin/main`...",
+      "Codex is validating findings...",
+      "Codex is preparing the Slack summary...",
+    ])
   })
 })
 

@@ -6,6 +6,11 @@ type SlackClient = {
   conversations?: unknown
 }
 
+export type ProgressMessage = {
+  readonly channel: string
+  readonly ts: string
+}
+
 type SlackMentionEvent = {
   readonly channel: string
   readonly user?: string
@@ -79,6 +84,43 @@ export async function clearAssistantStatus(
   }
 }
 
+export async function postProgressMessage(
+  client: SlackClient,
+  thread: Pick<SlackThread, "channel" | "threadTs">,
+  text: string,
+): Promise<ProgressMessage | undefined> {
+  if (!client.apiCall) return undefined
+  try {
+    const response = await client.apiCall("chat.postMessage", {
+      channel: thread.channel,
+      thread_ts: thread.threadTs,
+      text,
+    })
+    return parseProgressMessage(response)
+  } catch (error) {
+    if (error instanceof Error) return undefined
+    throw error
+  }
+}
+
+export async function updateProgressMessage(
+  client: SlackClient,
+  message: ProgressMessage | undefined,
+  text: string,
+): Promise<void> {
+  if (!client.apiCall || !message) return
+  try {
+    await client.apiCall("chat.update", {
+      channel: message.channel,
+      ts: message.ts,
+      text,
+    })
+  } catch (error) {
+    if (error instanceof Error) return
+    throw error
+  }
+}
+
 export function classificationStatusMessages(): readonly string[] {
   return [
     "Reading the request",
@@ -89,10 +131,19 @@ export function classificationStatusMessages(): readonly string[] {
 
 export function reviewStatusMessages(target: string, baseRef: string): readonly string[] {
   return [
-    `Switching to ${target}`,
-    `Reviewing changes against ${baseRef}`,
+    "Switching branches",
+    `Reviewing against ${baseRef}`,
     "Validating findings",
-    "Preparing the Slack summary",
+    "Preparing summary",
+  ]
+}
+
+export function visibleReviewProgressFrames(target: string, baseRef: string): readonly string[] {
+  return [
+    `Codex is switching to \`${target}\`...`,
+    `Codex is reviewing against \`${baseRef}\`...`,
+    "Codex is validating findings...",
+    "Codex is preparing the Slack summary...",
   ]
 }
 
@@ -152,6 +203,15 @@ function splitInlineCode(line: string): readonly { readonly kind: "code" | "text
     kind: value.startsWith("`") && value.endsWith("`") ? "code" : "text",
     value,
   }))
+}
+
+function parseProgressMessage(response: unknown): ProgressMessage | undefined {
+  if (!response || typeof response !== "object") return undefined
+  const values = response as Record<string, unknown>
+  const channel = values["channel"]
+  const ts = values["ts"]
+  if (typeof channel !== "string" || typeof ts !== "string") return undefined
+  return { channel, ts }
 }
 
 function assertNever(value: never): never {
