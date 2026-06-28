@@ -47,10 +47,6 @@ describe("handleThreadReview", () => {
     expect(calls[1]).toEqual([
       "--cd",
       "/poolpm-ai",
-      "--sandbox",
-      "read-only",
-      "--ask-for-approval",
-      "never",
       "exec",
       "-",
     ])

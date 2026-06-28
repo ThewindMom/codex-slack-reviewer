@@ -30,7 +30,7 @@ describe("classifyReviewIntent", () => {
     })
   })
 
-  test("runs Codex in read-only mode from the configured repo", async () => {
+  test("runs Codex from the configured repo without sandbox overrides", async () => {
     const calls: string[][] = []
     const runner: CodexRunner = {
       async run(args, _input) {
@@ -48,10 +48,6 @@ describe("classifyReviewIntent", () => {
     expect(calls[0]).toEqual([
       "--cd",
       "/poolpm-ai",
-      "--sandbox",
-      "read-only",
-      "--ask-for-approval",
-      "never",
       "--model",
       "gpt-test",
       "exec",

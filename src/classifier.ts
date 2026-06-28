@@ -30,10 +30,6 @@ export async function classifyReviewIntent(
   const args = [
     "--cd",
     config.CODEX_REPO_PATH,
-    "--sandbox",
-    "read-only",
-    "--ask-for-approval",
-    "never",
     ...(config.CLASSIFICATION_MODEL ? ["--model", config.CLASSIFICATION_MODEL] : []),
     "exec",
     "-",

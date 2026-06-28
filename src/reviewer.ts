@@ -28,10 +28,6 @@ export async function runCodexReview(
   const args = [
     "--cd",
     config.CODEX_REPO_PATH,
-    "--sandbox",
-    "read-only",
-    "--ask-for-approval",
-    "never",
     ...(config.REVIEW_MODEL ? ["--model", config.REVIEW_MODEL] : []),
     "exec",
     "-",
