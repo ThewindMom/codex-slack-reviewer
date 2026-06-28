@@ -81,6 +81,10 @@ While Codex is working, Slack shows Assistant status updates such as checking th
 request, switching to the requested branch, reviewing against `origin/main`, and
 preparing the summary.
 
+Final Codex review output is converted from common Markdown to Slack `mrkdwn`:
+headings become bold lines, Markdown links become Slack links, bold syntax is
+normalized, and code spans/fences are preserved.
+
 ## Safety Defaults
 
 - Classification runs `codex exec` with `--sandbox read-only`.

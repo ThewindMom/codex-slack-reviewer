@@ -2,6 +2,8 @@ import { describe, expect, test } from "bun:test"
 import {
   clearAssistantStatus,
   readSlackThread,
+  formatMarkdownForSlack,
+  formatOutcome,
   requesterMention,
   reviewStatusMessages,
   setAssistantStatus,
@@ -121,5 +123,49 @@ describe("assistant status", () => {
         "Reviewing",
       ]),
     ).resolves.toBeUndefined()
+  })
+})
+
+describe("formatMarkdownForSlack", () => {
+  test("converts common Codex Markdown into Slack mrkdwn", () => {
+    const markdown = [
+      "# Merge readiness",
+      "",
+      "**Verdict:** [Needs changes](https://example.com/review)",
+      "- **P1** Fix `quoteTotal`",
+    ].join("\n")
+
+    expect(formatMarkdownForSlack(markdown)).toBe(
+      [
+        "*Merge readiness*",
+        "",
+        "*Verdict:* <https://example.com/review|Needs changes>",
+        "- *P1* Fix `quoteTotal`",
+      ].join("\n"),
+    )
+  })
+
+  test("preserves fenced code blocks exactly", () => {
+    const markdown = ["```ts", "const value = \"**not bold**\"", "```"].join("\n")
+
+    expect(formatMarkdownForSlack(markdown)).toBe(markdown)
+  })
+
+  test("preserves inline code spans exactly", () => {
+    expect(formatMarkdownForSlack("Check `**raw**` then **bold**")).toBe(
+      "Check `**raw**` then *bold*",
+    )
+  })
+})
+
+describe("formatOutcome", () => {
+  test("formats reviewed Codex Markdown for Slack", () => {
+    expect(
+      formatOutcome({
+        kind: "reviewed",
+        target: "fix/example",
+        review: "## Findings\n\n**P1:** [Fix this](https://example.com)",
+      }),
+    ).toBe("*Codex review for fix/example:*\n\n*Findings*\n\n*P1:* <https://example.com|Fix this>")
   })
 })

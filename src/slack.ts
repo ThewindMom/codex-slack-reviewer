@@ -103,14 +103,55 @@ export function formatOutcome(outcome: ReviewOutcome): string {
     case "failed":
       return `Codex review failed: ${outcome.reason}`
     case "reviewed":
-      return [`Codex review for ${outcome.target}:`, outcome.review].join("\n\n")
+      return [`*Codex review for ${outcome.target}:*`, formatMarkdownForSlack(outcome.review)].join(
+        "\n\n",
+      )
     default:
       return assertNever(outcome)
   }
 }
 
+export function formatMarkdownForSlack(markdown: string): string {
+  const lines = markdown.split("\n")
+  let inFence = false
+  return lines
+    .map((line) => {
+      if (line.trimStart().startsWith("```")) {
+        inFence = !inFence
+        return line
+      }
+      if (inFence) return line
+      return formatSlackLine(line)
+    })
+    .join("\n")
+}
+
 export function requesterMention(thread: Pick<SlackThread, "requester">): string {
   return thread.requester === "unknown" ? "Review result" : `<@${thread.requester}>`
+}
+
+function formatSlackLine(line: string): string {
+  return splitInlineCode(formatHeading(line))
+    .map((part) => (part.kind === "code" ? part.value : formatInlineSlackMarkdown(part.value)))
+    .join("")
+}
+
+function formatHeading(line: string): string {
+  const match = /^(#{1,6})\s+(.+)$/.exec(line)
+  return match ? `*${match[2]}*` : line
+}
+
+function formatInlineSlackMarkdown(line: string): string {
+  return line
+    .replace(/\[([^\]]+)]\((https?:\/\/[^)\s]+)\)/g, "<$2|$1>")
+    .replace(/\*\*([^*\n]+)\*\*/g, "*$1*")
+}
+
+function splitInlineCode(line: string): readonly { readonly kind: "code" | "text"; readonly value: string }[] {
+  return line.split(/(`[^`]*`)/g).map((value) => ({
+    kind: value.startsWith("`") && value.endsWith("`") ? "code" : "text",
+    value,
+  }))
 }
 
 function assertNever(value: never): never {
