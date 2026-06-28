@@ -2,15 +2,14 @@ import { describe, expect, test } from "bun:test"
 import {
   clearAssistantStatus,
   readSlackThread,
+  formatCodexOutputProgress,
   formatMarkdownForSlack,
   formatOutcome,
-  formatVisibleReviewProgress,
   postProgressMessage,
   requesterMention,
   reviewStatusMessages,
   setAssistantStatus,
   updateProgressMessage,
-  visibleReviewProgressFrames,
 } from "../src/slack"
 
 describe("requesterMention", () => {
@@ -173,35 +172,42 @@ describe("visible progress messages", () => {
     ])
   })
 
-  test("builds visible review progress frames with the branch and base", () => {
-    expect(visibleReviewProgressFrames("fix/example", "origin/main")).toEqual([
-      "switching to `fix/example` and reviewing against `origin/main`",
-      "validating findings and preparing the Slack summary",
-    ])
-  })
-
-  test("formats visible review progress as an updating working indicator", () => {
+  test("formats streamed Codex output as the visible progress indicator", () => {
     expect(
-      formatVisibleReviewProgress({
+      formatCodexOutputProgress({
         mention: "<@U123>",
         target: "fix/example",
         baseRef: "origin/main",
-        frameIndex: 0,
+        output: "git fetch origin fix/example\nrunning docker compose",
       }),
     ).toBe(
       [
         "<@U123> review request detected (fix/example).",
-        "Working 1/2: Codex is switching to `fix/example` and reviewing against `origin/main`...",
+        "Streaming Codex output while reviewing against `origin/main`:",
+        "```",
+        "git fetch origin fix/example\nrunning docker compose",
+        "```",
       ].join("\n"),
     )
+  })
+
+  test("formats empty and fenced Codex output safely", () => {
     expect(
-      formatVisibleReviewProgress({
+      formatCodexOutputProgress({
         mention: "<@U123>",
         target: "fix/example",
         baseRef: "origin/main",
-        frameIndex: 1,
+        output: "```ts\nconst value = true\n```",
       }),
-    ).toContain("Working 2/2: Codex is validating findings and preparing the Slack summary...")
+    ).toContain("'''ts\nconst value = true\n'''")
+    expect(
+      formatCodexOutputProgress({
+        mention: "<@U123>",
+        target: "fix/example",
+        baseRef: "origin/main",
+        output: "",
+      }),
+    ).toContain("Codex started. Waiting for output...")
   })
 })
 

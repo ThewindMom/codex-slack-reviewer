@@ -7,8 +7,8 @@ import {
   classificationStatusMessages,
   clearAssistantStatus,
   canHandleEvent,
+  formatCodexOutputProgress,
   formatOutcome,
-  formatVisibleReviewProgress,
   postProgressMessage,
   type ProgressMessage,
   readSlackThread,
@@ -18,7 +18,8 @@ import {
   updateProgressMessage,
 } from "./slack"
 
-const PROGRESS_HEARTBEAT_MS = 5_000
+const STREAM_UPDATE_MS = 2_500
+const STREAM_TAIL_CHARS = 3_000
 
 const config = loadConfig(process.env)
 const runner = new ProcessCodexRunner(config.CODEX_BIN)
@@ -76,27 +77,27 @@ app.event("app_mention", async ({ event, client, say }) => {
           say,
           progress,
           thread.threadTs,
-          formatVisibleReviewProgress({
+          formatCodexOutputProgress({
             mention,
             target: intent.target,
             baseRef: config.CODEX_BASE_REF,
-            frameIndex: 0,
+            output: "",
           }),
         )
-        const stopHeartbeat = startProgressHeartbeat(
-          {
-            client,
-            progress,
-            mention,
-            target: intent.target,
-            baseRef: config.CODEX_BASE_REF,
-          },
-        )
+        const streamer = createCodexOutputStreamer({
+          client,
+          progress,
+          mention,
+          target: intent.target,
+          baseRef: config.CODEX_BASE_REF,
+        })
         let outcome: Awaited<ReturnType<typeof runCodexReview>>
         try {
-          outcome = await runCodexReview(runner, config, thread, intent.target)
+          outcome = await runCodexReview(runner, config, thread, intent.target, {
+            onOutput: streamer.onOutput,
+          })
         } finally {
-          stopHeartbeat()
+          await streamer.stop()
         }
         await updateOrSay(
           client,
@@ -138,7 +139,7 @@ async function updateOrSay(
   await say({ text, thread_ts: threadTs })
 }
 
-type ProgressHeartbeatInput = {
+type CodexOutputStreamerInput = {
   readonly client: Parameters<typeof updateProgressMessage>[0]
   readonly progress: ProgressMessage | undefined
   readonly mention: string
@@ -146,15 +147,46 @@ type ProgressHeartbeatInput = {
   readonly baseRef: string
 }
 
-function startProgressHeartbeat(input: ProgressHeartbeatInput): () => void {
+type CodexOutputStreamer = {
+  readonly onOutput: (output: { readonly chunk: string }) => void
+  readonly stop: () => Promise<void>
+}
+
+function createCodexOutputStreamer(input: CodexOutputStreamerInput): CodexOutputStreamer {
   const { client, progress } = input
-  if (!progress) return () => {}
-  let index = 1
-  const timer = setInterval(() => {
-    const text = formatVisibleReviewProgress({ ...input, frameIndex: index })
-    index += 1
-    void updateProgressMessage(client, progress, text)
-  }, PROGRESS_HEARTBEAT_MS)
-  timer.unref?.()
-  return () => clearInterval(timer)
+  let output = ""
+  let updateScheduled = false
+  let updateTimer: ReturnType<typeof setTimeout> | undefined
+
+  async function flush(): Promise<void> {
+    updateTimer = undefined
+    updateScheduled = false
+    if (!progress || !output.trim()) return
+    await updateProgressMessage(
+      client,
+      progress,
+      formatCodexOutputProgress({
+        ...input,
+        output: output.slice(-STREAM_TAIL_CHARS),
+      }),
+    )
+  }
+
+  return {
+    onOutput({ chunk }) {
+      output += chunk
+      if (updateScheduled) return
+      updateScheduled = true
+      updateTimer = setTimeout(() => {
+        void flush()
+      }, STREAM_UPDATE_MS).unref?.()
+    },
+    async stop() {
+      if (updateTimer) {
+        clearTimeout(updateTimer)
+        updateTimer = undefined
+      }
+      await flush()
+    },
+  }
 }

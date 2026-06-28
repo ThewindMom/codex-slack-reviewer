@@ -11,11 +11,11 @@ export type ProgressMessage = {
   readonly ts: string
 }
 
-export type VisibleReviewProgressInput = {
+export type CodexOutputProgressInput = {
   readonly mention: string
   readonly target: string
   readonly baseRef: string
-  readonly frameIndex: number
+  readonly output: string
 }
 
 type SlackMentionEvent = {
@@ -145,21 +145,20 @@ export function reviewStatusMessages(target: string, baseRef: string): readonly 
   ]
 }
 
-export function visibleReviewProgressFrames(target: string, baseRef: string): readonly string[] {
-  return [
-    `switching to \`${target}\` and reviewing against \`${baseRef}\``,
-    "validating findings and preparing the Slack summary",
-  ]
-}
-
-export function formatVisibleReviewProgress(input: VisibleReviewProgressInput): string {
-  const frames = visibleReviewProgressFrames(input.target, input.baseRef)
-  const frame = frames[input.frameIndex % frames.length] ?? "still working"
-  const step = (input.frameIndex % frames.length) + 1
+export function formatCodexOutputProgress(input: CodexOutputProgressInput): string {
   return [
     `${input.mention} review request detected (${input.target}).`,
-    `Working ${step}/${frames.length}: Codex is ${frame}...`,
+    `Streaming Codex output while reviewing against \`${input.baseRef}\`:`,
+    "```",
+    formatSlackCodeBlockText(input.output),
+    "```",
   ].join("\n")
+}
+
+function formatSlackCodeBlockText(text: string): string {
+  const trimmed = text.trim()
+  if (!trimmed) return "Codex started. Waiting for output..."
+  return trimmed.replaceAll("```", "'''")
 }
 
 export function formatOutcome(outcome: ReviewOutcome): string {

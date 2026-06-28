@@ -1,5 +1,5 @@
 import { spawn } from "node:child_process"
-import type { CodexRunner, CommandResult } from "./types"
+import type { CodexRunner, CodexRunOptions, CommandResult } from "./types"
 
 export class ProcessCodexRunner implements CodexRunner {
   readonly #bin: string
@@ -8,7 +8,7 @@ export class ProcessCodexRunner implements CodexRunner {
     this.#bin = bin
   }
 
-  run(args: readonly string[], input: string): Promise<CommandResult> {
+  run(args: readonly string[], input: string, options: CodexRunOptions = {}): Promise<CommandResult> {
     return new Promise((resolve, reject) => {
       const child = spawn(this.#bin, [...args], {
         stdio: ["pipe", "pipe", "pipe"],
@@ -18,8 +18,14 @@ export class ProcessCodexRunner implements CodexRunner {
 
       child.stdout.setEncoding("utf8")
       child.stderr.setEncoding("utf8")
-      child.stdout.on("data", (chunk: string) => stdout.push(chunk))
-      child.stderr.on("data", (chunk: string) => stderr.push(chunk))
+      child.stdout.on("data", (chunk: string) => {
+        stdout.push(chunk)
+        options.onOutput?.({ stream: "stdout", chunk })
+      })
+      child.stderr.on("data", (chunk: string) => {
+        stderr.push(chunk)
+        options.onOutput?.({ stream: "stderr", chunk })
+      })
       child.on("error", reject)
       child.on("close", (code) =>
         resolve({

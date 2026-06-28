@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test"
-import { handleThreadReview } from "../src/reviewer"
+import { handleThreadReview, runCodexReview } from "../src/reviewer"
 import type { CodexRunner, SlackThread } from "../src/types"
 
 const thread: SlackThread = {
@@ -55,6 +55,24 @@ describe("handleThreadReview", () => {
       target: "current pushed work",
       review: "Looks mergeable. No blocking findings.",
     })
+  })
+
+  test("streams Codex review output through the runner callback", async () => {
+    const streamedChunks: string[] = []
+    const runner: CodexRunner = {
+      async run(_args, _input, options) {
+        options?.onOutput?.({ stream: "stdout", chunk: "creating temp worktree\n" })
+        options?.onOutput?.({ stream: "stderr", chunk: "docker compose building\n" })
+        return { exitCode: 0, stdout: "Final review", stderr: "" }
+      },
+    }
+
+    const outcome = await runCodexReview(runner, config(), thread, "fix/example", {
+      onOutput: ({ chunk }) => streamedChunks.push(chunk),
+    })
+
+    expect(streamedChunks).toEqual(["creating temp worktree\n", "docker compose building\n"])
+    expect(outcome).toEqual({ kind: "reviewed", target: "fix/example", review: "Final review" })
   })
 })
 

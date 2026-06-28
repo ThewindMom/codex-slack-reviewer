@@ -1,6 +1,6 @@
 import type { AppConfig } from "./config"
 import { reviewPrompt } from "./prompts"
-import type { CodexRunner, ReviewOutcome, SlackThread } from "./types"
+import type { CodexRunner, CodexRunOptions, ReviewOutcome, SlackThread } from "./types"
 import { classifyReviewIntent } from "./classifier"
 
 export async function handleThreadReview(
@@ -24,6 +24,7 @@ export async function runCodexReview(
   config: Pick<AppConfig, "CODEX_REPO_PATH" | "CODEX_BASE_REF" | "REVIEW_MODEL">,
   thread: SlackThread,
   target: string,
+  options: CodexRunOptions = {},
 ): Promise<ReviewOutcome> {
   const args = [
     "--cd",
@@ -32,7 +33,7 @@ export async function runCodexReview(
     "exec",
     "-",
   ]
-  const result = await runner.run(args, reviewPrompt(thread, config.CODEX_BASE_REF, target))
+  const result = await runner.run(args, reviewPrompt(thread, config.CODEX_BASE_REF, target), options)
   if (result.exitCode !== 0) {
     return { kind: "failed", reason: result.stderr || "Codex review failed" }
   }

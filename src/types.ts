@@ -28,8 +28,17 @@ export type CommandResult = {
   readonly stderr: string
 }
 
+export type CommandOutput = {
+  readonly stream: "stdout" | "stderr"
+  readonly chunk: string
+}
+
+export type CodexRunOptions = {
+  readonly onOutput?: (output: CommandOutput) => void
+}
+
 export interface CodexRunner {
-  run(args: readonly string[], input: string): Promise<CommandResult>
+  run(args: readonly string[], input: string, options?: CodexRunOptions): Promise<CommandResult>
 }
 
 export type ReviewOutcome =
