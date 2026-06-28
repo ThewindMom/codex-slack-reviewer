@@ -18,20 +18,23 @@ describe("reviewPrompt", () => {
     expect(prompt).toContain("browser QA")
   })
 
-  test("requires switching to the branch requested in Slack before review", () => {
+  test("requires reviewing the requested branch from a temporary worktree", () => {
     const prompt = reviewPrompt(thread, "origin/main", "fix/dxf-measurement-dirty-flag")
 
-    expect(prompt).toContain("Switch to the requested branch before reviewing")
+    expect(prompt).toContain("Use a temporary Git worktree as the primary review checkout")
     expect(prompt).toContain("fix/dxf-measurement-dirty-flag")
+    expect(prompt).toContain("git fetch origin fix/dxf-measurement-dirty-flag")
+    expect(prompt).toContain(
+      'git worktree add --detach "$REVIEW_WORKTREE" origin/fix/dxf-measurement-dirty-flag',
+    )
     expect(prompt).toContain("Do not assume the currently checked-out branch is the branch to review")
     expect(prompt).toContain("against origin/main")
   })
 
-  test("handles branches already checked out in another worktree", () => {
+  test("forbids reviewing in the original checkout", () => {
     const prompt = reviewPrompt(thread, "origin/main", "fix/dxf-measurement-dirty-flag")
 
-    expect(prompt).toContain("If Git refuses to switch because the branch is checked out in another worktree")
-    expect(prompt).toContain("origin/fix/dxf-measurement-dirty-flag")
-    expect(prompt).toContain("temporary worktree")
+    expect(prompt).toContain("Do not review in the currently checked-out worktree")
+    expect(prompt).toContain('git worktree remove "$REVIEW_WORKTREE" --force')
   })
 })
