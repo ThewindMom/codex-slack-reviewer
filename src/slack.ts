@@ -2,21 +2,8 @@ import type { AppConfig } from "./config"
 import type { ReviewOutcome, SlackThread } from "./types"
 
 type SlackClient = {
-  conversations: {
-    replies(args: {
-      readonly channel: string
-      readonly ts: string
-      readonly limit: number
-    }): Promise<{
-      readonly messages?: readonly {
-        readonly user?: string
-        readonly username?: string
-        readonly bot_id?: string
-        readonly text?: string
-        readonly ts?: string
-      }[]
-    }>
-  }
+  apiCall?: (method: string, args: Record<string, unknown>) => Promise<unknown>
+  conversations?: unknown
 }
 
 type SlackMentionEvent = {
@@ -52,6 +39,61 @@ export async function readSlackThread(
     requester: event.user ?? "unknown",
     messages: [{ user: event.user ?? "unknown", text: event.text ?? "", ts: event.ts }],
   }
+}
+
+export async function setAssistantStatus(
+  client: SlackClient,
+  thread: Pick<SlackThread, "channel" | "threadTs">,
+  status: string,
+  loadingMessages: readonly string[],
+): Promise<void> {
+  if (!client.apiCall) return
+  try {
+    await client.apiCall("assistant.threads.setStatus", {
+      channel_id: thread.channel,
+      thread_ts: thread.threadTs,
+      status,
+      loading_messages: [...loadingMessages],
+    })
+  } catch (error) {
+    if (error instanceof Error) return
+    throw error
+  }
+}
+
+export async function clearAssistantStatus(
+  client: SlackClient,
+  thread: Pick<SlackThread, "channel" | "threadTs">,
+): Promise<void> {
+  if (!client.apiCall) return
+  try {
+    await client.apiCall("assistant.threads.setStatus", {
+      channel_id: thread.channel,
+      thread_ts: thread.threadTs,
+      status: "",
+      loading_messages: [],
+    })
+  } catch (error) {
+    if (error instanceof Error) return
+    throw error
+  }
+}
+
+export function classificationStatusMessages(): readonly string[] {
+  return [
+    "Reading the request",
+    "Checking whether this needs a review",
+    "Preparing Codex context",
+  ]
+}
+
+export function reviewStatusMessages(target: string, baseRef: string): readonly string[] {
+  return [
+    `Switching to ${target}`,
+    `Reviewing changes against ${baseRef}`,
+    "Validating findings",
+    "Preparing the Slack summary",
+  ]
 }
 
 export function formatOutcome(outcome: ReviewOutcome): string {

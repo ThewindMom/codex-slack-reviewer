@@ -46,6 +46,9 @@ Event subscriptions:
 
 Create an app-level token with `connections:write`.
 
+The bot also calls Slack's `assistant.threads.setStatus` while Codex is working.
+Slack rotates the supplied loading messages as the visible thinking indicator.
+
 ## Local Setup
 
 ```sh
@@ -74,10 +77,15 @@ Then mention the bot in Slack:
 @codex Cory pushed the lead proposal changes. Can this merge into main?
 ```
 
+While Codex is working, Slack shows Assistant status updates such as checking the
+request, switching to the requested branch, reviewing against `origin/main`, and
+preparing the summary.
+
 ## Safety Defaults
 
 - Classification runs `codex exec` with `--sandbox read-only`.
 - Review runs `codex exec` with `--sandbox read-only`.
+- Working state is surfaced through Slack Assistant thread status updates.
 - The bot reviews only the configured `CODEX_REPO_PATH`.
 - Use `ALLOWED_SLACK_USER_IDS` and `ALLOWED_SLACK_CHANNEL_IDS` to restrict who
   can trigger reviews.
