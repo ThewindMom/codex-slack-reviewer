@@ -18,6 +18,7 @@ describe("reviewPrompt", () => {
       'docker compose -p "$REVIEW_COMPOSE_PROJECT" down -v && docker compose -p "$REVIEW_COMPOSE_PROJECT" up --build -d',
     )
     expect(prompt).toContain("browser QA")
+    expect(prompt).toContain("use the project's dev login")
   })
 
   test("requires reviewing the requested branch from a temporary worktree", () => {

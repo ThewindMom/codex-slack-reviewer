@@ -67,6 +67,7 @@ export function reviewPrompt(thread: SlackThread, baseRef: string, target: strin
     "docker compose -p \"$REVIEW_COMPOSE_PROJECT\" logs catalog-etl and",
     "docker compose -p \"$REVIEW_COMPOSE_PROJECT\" ps repeatedly before declaring the stack unreachable.",
     "Run browser QA against the rebuilt app when there is a browser-facing surface, and",
+    "use the project's dev login so authentication does not block Browser QA.",
     "include any validation gaps in the final review if Docker or browser QA cannot be run.",
     "",
     "Slack trigger message:",
