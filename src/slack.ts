@@ -11,6 +11,13 @@ export type ProgressMessage = {
   readonly ts: string
 }
 
+export type VisibleReviewProgressInput = {
+  readonly mention: string
+  readonly target: string
+  readonly baseRef: string
+  readonly frameIndex: number
+}
+
 type SlackMentionEvent = {
   readonly channel: string
   readonly user?: string
@@ -140,11 +147,19 @@ export function reviewStatusMessages(target: string, baseRef: string): readonly 
 
 export function visibleReviewProgressFrames(target: string, baseRef: string): readonly string[] {
   return [
-    `Codex is switching to \`${target}\`...`,
-    `Codex is reviewing against \`${baseRef}\`...`,
-    "Codex is validating findings...",
-    "Codex is preparing the Slack summary...",
+    `switching to \`${target}\` and reviewing against \`${baseRef}\``,
+    "validating findings and preparing the Slack summary",
   ]
+}
+
+export function formatVisibleReviewProgress(input: VisibleReviewProgressInput): string {
+  const frames = visibleReviewProgressFrames(input.target, input.baseRef)
+  const frame = frames[input.frameIndex % frames.length] ?? "still working"
+  const step = (input.frameIndex % frames.length) + 1
+  return [
+    `${input.mention} review request detected (${input.target}).`,
+    `Working ${step}/${frames.length}: Codex is ${frame}...`,
+  ].join("\n")
 }
 
 export function formatOutcome(outcome: ReviewOutcome): string {

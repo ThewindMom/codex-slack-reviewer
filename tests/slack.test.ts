@@ -4,6 +4,7 @@ import {
   readSlackThread,
   formatMarkdownForSlack,
   formatOutcome,
+  formatVisibleReviewProgress,
   postProgressMessage,
   requesterMention,
   reviewStatusMessages,
@@ -174,11 +175,33 @@ describe("visible progress messages", () => {
 
   test("builds visible review progress frames with the branch and base", () => {
     expect(visibleReviewProgressFrames("fix/example", "origin/main")).toEqual([
-      "Codex is switching to `fix/example`...",
-      "Codex is reviewing against `origin/main`...",
-      "Codex is validating findings...",
-      "Codex is preparing the Slack summary...",
+      "switching to `fix/example` and reviewing against `origin/main`",
+      "validating findings and preparing the Slack summary",
     ])
+  })
+
+  test("formats visible review progress as an updating working indicator", () => {
+    expect(
+      formatVisibleReviewProgress({
+        mention: "<@U123>",
+        target: "fix/example",
+        baseRef: "origin/main",
+        frameIndex: 0,
+      }),
+    ).toBe(
+      [
+        "<@U123> review request detected (fix/example).",
+        "Working 1/2: Codex is switching to `fix/example` and reviewing against `origin/main`...",
+      ].join("\n"),
+    )
+    expect(
+      formatVisibleReviewProgress({
+        mention: "<@U123>",
+        target: "fix/example",
+        baseRef: "origin/main",
+        frameIndex: 1,
+      }),
+    ).toContain("Working 2/2: Codex is validating findings and preparing the Slack summary...")
   })
 })
 

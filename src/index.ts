@@ -8,6 +8,7 @@ import {
   clearAssistantStatus,
   canHandleEvent,
   formatOutcome,
+  formatVisibleReviewProgress,
   postProgressMessage,
   type ProgressMessage,
   readSlackThread,
@@ -15,8 +16,9 @@ import {
   reviewStatusMessages,
   setAssistantStatus,
   updateProgressMessage,
-  visibleReviewProgressFrames,
 } from "./slack"
+
+const PROGRESS_HEARTBEAT_MS = 5_000
 
 const config = loadConfig(process.env)
 const runner = new ProcessCodexRunner(config.CODEX_BIN)
@@ -74,16 +76,28 @@ app.event("app_mention", async ({ event, client, say }) => {
           say,
           progress,
           thread.threadTs,
-          `${mention} review request detected (${intent.target}). Running Codex against ${config.CODEX_BASE_REF}...`,
+          formatVisibleReviewProgress({
+            mention,
+            target: intent.target,
+            baseRef: config.CODEX_BASE_REF,
+            frameIndex: 0,
+          }),
         )
         const stopHeartbeat = startProgressHeartbeat(
-          client,
-          progress,
-          mention,
-          visibleReviewProgressFrames(intent.target, config.CODEX_BASE_REF),
+          {
+            client,
+            progress,
+            mention,
+            target: intent.target,
+            baseRef: config.CODEX_BASE_REF,
+          },
         )
-        const outcome = await runCodexReview(runner, config, thread, intent.target)
-        stopHeartbeat()
+        let outcome: Awaited<ReturnType<typeof runCodexReview>>
+        try {
+          outcome = await runCodexReview(runner, config, thread, intent.target)
+        } finally {
+          stopHeartbeat()
+        }
         await updateOrSay(
           client,
           say,
@@ -124,19 +138,23 @@ async function updateOrSay(
   await say({ text, thread_ts: threadTs })
 }
 
-function startProgressHeartbeat(
-  client: Parameters<typeof updateProgressMessage>[0],
-  progress: ProgressMessage | undefined,
-  mention: string,
-  frames: readonly string[],
-): () => void {
-  if (!progress || frames.length === 0) return () => {}
-  let index = 0
+type ProgressHeartbeatInput = {
+  readonly client: Parameters<typeof updateProgressMessage>[0]
+  readonly progress: ProgressMessage | undefined
+  readonly mention: string
+  readonly target: string
+  readonly baseRef: string
+}
+
+function startProgressHeartbeat(input: ProgressHeartbeatInput): () => void {
+  const { client, progress } = input
+  if (!progress) return () => {}
+  let index = 1
   const timer = setInterval(() => {
-    const frame = frames[index % frames.length] ?? "Codex is still working..."
+    const text = formatVisibleReviewProgress({ ...input, frameIndex: index })
     index += 1
-    void updateProgressMessage(client, progress, `${mention} ${frame}`)
-  }, 12_000)
+    void updateProgressMessage(client, progress, text)
+  }, PROGRESS_HEARTBEAT_MS)
   timer.unref?.()
   return () => clearInterval(timer)
 }
