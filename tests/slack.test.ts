@@ -179,11 +179,14 @@ describe("visible progress messages", () => {
         target: "fix/example",
         baseRef: "origin/main",
         output: "git fetch origin fix/example\nrunning docker compose",
+        timestamp: "2026-06-28T12:00:00.000Z",
+        spinner: "|",
       }),
     ).toBe(
       [
         "<@U123> review request detected (fix/example).",
-        "Streaming Codex output while reviewing against `origin/main`:",
+        "| Streaming Codex output while reviewing against `origin/main`.",
+        "Last update: 2026-06-28T12:00:00.000Z",
         "```",
         "git fetch origin fix/example\nrunning docker compose",
         "```",
@@ -198,6 +201,8 @@ describe("visible progress messages", () => {
         target: "fix/example",
         baseRef: "origin/main",
         output: "```ts\nconst value = true\n```",
+        timestamp: "2026-06-28T12:00:00.000Z",
+        spinner: "-",
       }),
     ).toContain("'''ts\nconst value = true\n'''")
     expect(
@@ -206,6 +211,8 @@ describe("visible progress messages", () => {
         target: "fix/example",
         baseRef: "origin/main",
         output: "",
+        timestamp: "2026-06-28T12:00:00.000Z",
+        spinner: "-",
       }),
     ).toContain("Codex started. Waiting for output...")
   })

@@ -19,7 +19,9 @@ import {
 } from "./slack"
 
 const STREAM_UPDATE_MS = 2_500
+const STREAM_KEEPALIVE_MS = 30_000
 const STREAM_TAIL_CHARS = 3_000
+const STREAM_SPINNER_FRAMES = ["-", "\\", "|", "/"] as const
 
 const config = loadConfig(process.env)
 const runner = new ProcessCodexRunner(config.CODEX_BIN)
@@ -82,6 +84,8 @@ app.event("app_mention", async ({ event, client, say }) => {
             target: intent.target,
             baseRef: config.CODEX_BASE_REF,
             output: "",
+            timestamp: timestamp(),
+            spinner: STREAM_SPINNER_FRAMES[0],
           }),
         )
         const streamer = createCodexOutputStreamer({
@@ -157,17 +161,26 @@ function createCodexOutputStreamer(input: CodexOutputStreamerInput): CodexOutput
   let output = ""
   let updateScheduled = false
   let updateTimer: ReturnType<typeof setTimeout> | undefined
+  let spinnerIndex = 0
+  const keepaliveTimer = setInterval(() => {
+    void flush({ force: true })
+  }, STREAM_KEEPALIVE_MS)
+  keepaliveTimer.unref?.()
 
-  async function flush(): Promise<void> {
+  async function flush(options: { readonly force: boolean } = { force: false }): Promise<void> {
     updateTimer = undefined
     updateScheduled = false
-    if (!progress || !output.trim()) return
+    if (!progress || (!options.force && !output.trim())) return
+    const spinner = STREAM_SPINNER_FRAMES[spinnerIndex % STREAM_SPINNER_FRAMES.length] ?? "-"
+    spinnerIndex += 1
     await updateProgressMessage(
       client,
       progress,
       formatCodexOutputProgress({
         ...input,
         output: output.slice(-STREAM_TAIL_CHARS),
+        timestamp: timestamp(),
+        spinner,
       }),
     )
   }
@@ -182,6 +195,7 @@ function createCodexOutputStreamer(input: CodexOutputStreamerInput): CodexOutput
       }, STREAM_UPDATE_MS).unref?.()
     },
     async stop() {
+      clearInterval(keepaliveTimer)
       if (updateTimer) {
         clearTimeout(updateTimer)
         updateTimer = undefined
@@ -189,4 +203,8 @@ function createCodexOutputStreamer(input: CodexOutputStreamerInput): CodexOutput
       await flush()
     },
   }
+}
+
+function timestamp(): string {
+  return new Date().toISOString()
 }

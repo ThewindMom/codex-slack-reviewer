@@ -16,6 +16,8 @@ export type CodexOutputProgressInput = {
   readonly target: string
   readonly baseRef: string
   readonly output: string
+  readonly timestamp: string
+  readonly spinner: string
 }
 
 type SlackMentionEvent = {
@@ -148,7 +150,8 @@ export function reviewStatusMessages(target: string, baseRef: string): readonly 
 export function formatCodexOutputProgress(input: CodexOutputProgressInput): string {
   return [
     `${input.mention} review request detected (${input.target}).`,
-    `Streaming Codex output while reviewing against \`${input.baseRef}\`:`,
+    `${input.spinner} Streaming Codex output while reviewing against \`${input.baseRef}\`.`,
+    `Last update: ${input.timestamp}`,
     "```",
     formatSlackCodeBlockText(input.output),
     "```",
