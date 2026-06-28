@@ -14,7 +14,9 @@ describe("reviewPrompt", () => {
     const prompt = reviewPrompt(thread, "origin/main", "current branch")
 
     expect(prompt).toContain("ultrawork")
-    expect(prompt).toContain("docker compose down -v && docker compose up --build -d")
+    expect(prompt).toContain(
+      'docker compose -p "$REVIEW_COMPOSE_PROJECT" down -v && docker compose -p "$REVIEW_COMPOSE_PROJECT" up --build -d',
+    )
     expect(prompt).toContain("browser QA")
   })
 
@@ -36,5 +38,25 @@ describe("reviewPrompt", () => {
 
     expect(prompt).toContain("Do not review in the currently checked-out worktree")
     expect(prompt).toContain('git worktree remove "$REVIEW_WORKTREE" --force')
+  })
+
+  test("requires isolated Docker Compose project and port handling", () => {
+    const prompt = reviewPrompt(thread, "origin/main", "fix/dxf-measurement-dirty-flag")
+
+    expect(prompt).toContain("active developer stack cannot be stopped")
+    expect(prompt).toContain("REVIEW_COMPOSE_PROJECT")
+    expect(prompt).toContain("isolates Compose containers, volumes, and networks")
+    expect(prompt).toContain("If host ports conflict with another running poolpm stack")
+    expect(prompt).toContain("temporary Compose override")
+  })
+
+  test("requires polling catalog-etl before declaring Docker stack failure", () => {
+    const prompt = reviewPrompt(thread, "origin/main", "fix/dxf-measurement-dirty-flag")
+
+    expect(prompt).toContain("catalog-etl can run for a long time on a cold-volume rebuild")
+    expect(prompt).toContain("dependent services may")
+    expect(prompt).toContain("remain Created until it exits")
+    expect(prompt).toContain('docker compose -p "$REVIEW_COMPOSE_PROJECT" logs catalog-etl')
+    expect(prompt).toContain('docker compose -p "$REVIEW_COMPOSE_PROJECT" ps repeatedly')
   })
 })
