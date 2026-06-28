@@ -14,7 +14,7 @@ or merge-readiness asks trigger Codex.
 Slack app mention
   -> read the current Slack thread
   -> codex exec classifies intent in read-only mode
-  -> codex review runs against CODEX_BASE_REF when needed
+  -> codex exec reviews against CODEX_BASE_REF when needed
   -> result is posted back into the Slack thread
 ```
 
@@ -77,7 +77,7 @@ Then mention the bot in Slack:
 ## Safety Defaults
 
 - Classification runs `codex exec` with `--sandbox read-only`.
-- Review runs `codex review` with `--sandbox read-only`.
+- Review runs `codex exec` with `--sandbox read-only`.
 - The bot reviews only the configured `CODEX_REPO_PATH`.
 - Use `ALLOWED_SLACK_USER_IDS` and `ALLOWED_SLACK_CHANNEL_IDS` to restrict who
   can trigger reviews.

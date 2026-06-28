@@ -33,9 +33,7 @@ export async function runCodexReview(
     "--ask-for-approval",
     "never",
     ...(config.REVIEW_MODEL ? ["--model", config.REVIEW_MODEL] : []),
-    "review",
-    "--base",
-    config.CODEX_BASE_REF,
+    "exec",
     "-",
   ]
   const result = await runner.run(args, reviewPrompt(thread, config.CODEX_BASE_REF, target))

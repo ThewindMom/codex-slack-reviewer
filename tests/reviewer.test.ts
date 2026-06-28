@@ -51,9 +51,7 @@ describe("handleThreadReview", () => {
       "read-only",
       "--ask-for-approval",
       "never",
-      "review",
-      "--base",
-      "origin/main",
+      "exec",
       "-",
     ])
     expect(outcome).toEqual({
