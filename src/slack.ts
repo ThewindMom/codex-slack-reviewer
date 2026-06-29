@@ -1,3 +1,4 @@
+import { unlink } from "node:fs/promises"
 import { basename } from "node:path"
 import type { AppConfig } from "./config"
 import type { ReviewOutcome, SlackThread } from "./types"
@@ -161,6 +162,7 @@ export async function uploadBrowserQaVideos(
         title: `Browser QA video - ${basename(filePath)}`,
         initial_comment: "Browser QA video artifact from Codex review.",
       })
+      await unlink(filePath)
     } catch (error) {
       if (error instanceof Error) continue
       throw error

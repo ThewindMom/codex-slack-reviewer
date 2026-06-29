@@ -79,6 +79,8 @@ describe("reviewPrompt", () => {
 
     expect(prompt).toContain("record a short video of the end-to-end validation flow")
     expect(prompt).toContain("Save the video artifact")
+    expect(prompt).toContain("verify the video is playable")
+    expect(prompt).toContain("not a near-empty recording")
     expect(prompt).toContain("Browser QA video artifact: /absolute/path/to/video.webm")
     expect(prompt).toContain("The Slack bot will upload")
     expect(prompt).toContain("same Slack thread")

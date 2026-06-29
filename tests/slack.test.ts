@@ -233,7 +233,7 @@ describe("Browser QA video artifacts", () => {
     ).toEqual(["/tmp/review/video.webm", "/tmp/review/fallback.mp4"])
   })
 
-  test("uploads existing Browser QA videos into the Slack thread", async () => {
+  test("uploads existing Browser QA videos into the Slack thread and removes them", async () => {
     const artifactPath = "/tmp/codex-slack-reviewer-video-test.webm"
     await Bun.write(artifactPath, "fake-video")
     const uploads: Record<string, unknown>[] = []
@@ -262,6 +262,7 @@ describe("Browser QA video artifacts", () => {
         initial_comment: "Browser QA video artifact from Codex review.",
       },
     ])
+    expect(await Bun.file(artifactPath).exists()).toBe(false)
   })
 })
 
