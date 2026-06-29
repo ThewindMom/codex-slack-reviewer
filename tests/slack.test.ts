@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test"
 import {
   clearAssistantStatus,
+  extractBrowserQaVideoArtifacts,
   readSlackThread,
   formatCodexOutputProgress,
   formatMarkdownForSlack,
@@ -10,6 +11,7 @@ import {
   reviewStatusMessages,
   setAssistantStatus,
   updateProgressMessage,
+  uploadBrowserQaVideos,
 } from "../src/slack"
 
 describe("requesterMention", () => {
@@ -215,6 +217,51 @@ describe("visible progress messages", () => {
         spinner: "-",
       }),
     ).toContain("Codex started. Waiting for output...")
+  })
+})
+
+describe("Browser QA video artifacts", () => {
+  test("extracts unique Browser QA video artifact paths from review text", () => {
+    expect(
+      extractBrowserQaVideoArtifacts(
+        [
+          "Browser QA video artifact: /tmp/review/video.webm",
+          "Video artifact: `/tmp/review/fallback.mp4`",
+          "Browser QA video artifact: /tmp/review/video.webm",
+        ].join("\n"),
+      ),
+    ).toEqual(["/tmp/review/video.webm", "/tmp/review/fallback.mp4"])
+  })
+
+  test("uploads existing Browser QA videos into the Slack thread", async () => {
+    const artifactPath = "/tmp/codex-slack-reviewer-video-test.webm"
+    await Bun.write(artifactPath, "fake-video")
+    const uploads: Record<string, unknown>[] = []
+    const client = {
+      files: {
+        async uploadV2(args: Record<string, unknown>) {
+          uploads.push(args)
+          return { ok: true }
+        },
+      },
+    }
+
+    await uploadBrowserQaVideos(
+      client,
+      { channel: "C123", threadTs: "1.0" },
+      `Browser QA video artifact: ${artifactPath}`,
+    )
+
+    expect(uploads).toEqual([
+      {
+        channel_id: "C123",
+        thread_ts: "1.0",
+        file: artifactPath,
+        filename: "codex-slack-reviewer-video-test.webm",
+        title: "Browser QA video - codex-slack-reviewer-video-test.webm",
+        initial_comment: "Browser QA video artifact from Codex review.",
+      },
+    ])
   })
 })
 

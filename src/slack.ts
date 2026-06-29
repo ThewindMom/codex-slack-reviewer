@@ -1,9 +1,22 @@
+import { basename } from "node:path"
 import type { AppConfig } from "./config"
 import type { ReviewOutcome, SlackThread } from "./types"
 
 type SlackClient = {
   apiCall?: (method: string, args: Record<string, unknown>) => Promise<unknown>
   conversations?: unknown
+  files?: {
+    uploadV2?: unknown
+  }
+}
+
+type SlackFileUpload = {
+  readonly channel_id: string
+  readonly thread_ts: string
+  readonly file: string
+  readonly filename: string
+  readonly title: string
+  readonly initial_comment: string
 }
 
 export type ProgressMessage = {
@@ -130,6 +143,42 @@ export async function updateProgressMessage(
   }
 }
 
+export async function uploadBrowserQaVideos(
+  client: SlackClient,
+  thread: Pick<SlackThread, "channel" | "threadTs">,
+  review: string,
+): Promise<void> {
+  const uploadV2 = client.files?.uploadV2
+  if (!isSlackFileUploader(uploadV2)) return
+  for (const filePath of extractBrowserQaVideoArtifacts(review)) {
+    if (!(await Bun.file(filePath).exists())) continue
+    try {
+      await uploadV2({
+        channel_id: thread.channel,
+        thread_ts: thread.threadTs,
+        file: filePath,
+        filename: basename(filePath),
+        title: `Browser QA video - ${basename(filePath)}`,
+        initial_comment: "Browser QA video artifact from Codex review.",
+      })
+    } catch (error) {
+      if (error instanceof Error) continue
+      throw error
+    }
+  }
+}
+
+export function extractBrowserQaVideoArtifacts(review: string): readonly string[] {
+  const matches = review.matchAll(
+    /(?:Browser QA video artifact|Video artifact):\s*`?([^`\n]+?\.(?:webm|mp4|mov|mkv))`?/gi,
+  )
+  return [...new Set([...matches].map((match) => match[1]?.trim()).filter(isNonEmptyString))]
+}
+
+function isSlackFileUploader(value: unknown): value is (args: SlackFileUpload) => Promise<unknown> {
+  return typeof value === "function"
+}
+
 export function classificationStatusMessages(): readonly string[] {
   return [
     "Reading the request",
@@ -229,6 +278,10 @@ function parseProgressMessage(response: unknown): ProgressMessage | undefined {
   const ts = values["ts"]
   if (typeof channel !== "string" || typeof ts !== "string") return undefined
   return { channel, ts }
+}
+
+function isNonEmptyString(value: string | undefined): value is string {
+  return typeof value === "string" && value.length > 0
 }
 
 function assertNever(value: never): never {

@@ -16,6 +16,7 @@ import {
   reviewStatusMessages,
   setAssistantStatus,
   updateProgressMessage,
+  uploadBrowserQaVideos,
 } from "./slack"
 
 const STREAM_UPDATE_MS = 2_500
@@ -110,6 +111,9 @@ app.event("app_mention", async ({ event, client, say }) => {
           thread.threadTs,
           `${mention}\n\n${formatOutcome(outcome)}`,
         )
+        if (outcome.kind === "reviewed") {
+          await uploadBrowserQaVideos(client, thread, outcome.review)
+        }
         return
       }
       default:

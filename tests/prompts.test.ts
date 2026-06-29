@@ -34,6 +34,15 @@ describe("reviewPrompt", () => {
     expect(prompt).toContain("against origin/main")
   })
 
+  test("requires latest-commit focus plus whole-branch merge readiness", () => {
+    const prompt = reviewPrompt(thread, "origin/main", "fix/dxf-measurement-dirty-flag")
+
+    expect(prompt).toContain("Review the latest commit or commits")
+    expect(prompt).toContain("then review the full branch diff against origin/main")
+    expect(prompt).toContain("branch as a whole")
+    expect(prompt).toContain("branch-wide regressions")
+  })
+
   test("forbids reviewing in the original checkout", () => {
     const prompt = reviewPrompt(thread, "origin/main", "fix/dxf-measurement-dirty-flag")
 
@@ -63,5 +72,15 @@ describe("reviewPrompt", () => {
     expect(prompt).toContain("remain Created until it exits")
     expect(prompt).toContain('docker compose -p "$REVIEW_COMPOSE_PROJECT" logs catalog-etl')
     expect(prompt).toContain('docker compose -p "$REVIEW_COMPOSE_PROJECT" ps repeatedly')
+  })
+
+  test("requires Browser QA video artifact for Slack upload", () => {
+    const prompt = reviewPrompt(thread, "origin/main", "fix/dxf-measurement-dirty-flag")
+
+    expect(prompt).toContain("record a short video of the end-to-end validation flow")
+    expect(prompt).toContain("Save the video artifact")
+    expect(prompt).toContain("Browser QA video artifact: /absolute/path/to/video.webm")
+    expect(prompt).toContain("The Slack bot will upload")
+    expect(prompt).toContain("same Slack thread")
   })
 })
