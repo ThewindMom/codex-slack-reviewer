@@ -77,7 +77,14 @@ describe("reviewPrompt", () => {
   test("requires Browser QA video artifact for Slack upload", () => {
     const prompt = reviewPrompt(thread, "origin/main", "fix/dxf-measurement-dirty-flag")
 
-    expect(prompt).toContain("record a short video of the end-to-end validation flow")
+    expect(prompt).toContain("complete end-to-end user flow")
+    expect(prompt).toContain("not just a page load or isolated")
+    expect(prompt).toContain("visible step labels/checkpoints")
+    expect(prompt).toContain("Step 1: open review URL")
+    expect(prompt).toContain("Step 2: dev login")
+    expect(prompt).toContain("Step 3: perform workflow")
+    expect(prompt).toContain("Step 4: verify result")
+    expect(prompt).toContain("pause briefly on the final success state")
     expect(prompt).toContain("Save the video artifact")
     expect(prompt).toContain("verify the video is playable")
     expect(prompt).toContain("not a near-empty recording")
