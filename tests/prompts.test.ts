@@ -79,6 +79,9 @@ describe("reviewPrompt", () => {
 
     expect(prompt).toContain("complete end-to-end user flow")
     expect(prompt).toContain("not just a page load or isolated")
+    expect(prompt).toContain("1920x1080 desktop browser viewport")
+    expect(prompt).toContain("1920x1080 video output")
+    expect(prompt).toContain("Slack playback is not cropped")
     expect(prompt).toContain("visible step labels/checkpoints")
     expect(prompt).toContain("Step 1: open review URL")
     expect(prompt).toContain("Step 2: dev login")
